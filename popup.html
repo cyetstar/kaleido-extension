@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>Kaleido设置</title>
+    <style>
+        body {
+            width: 300px;
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            margin: 5px 0 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<h3>Kaleido设置</h3>
+<form id="settings-form">
+    <label for="api-url">API 地址:</label>
+    <input type="text" id="api-url" placeholder="输入 API 地址" required>
+
+    <label for="websites">生效网站 (多个用逗号分隔):</label>
+    <textarea id="websites" rows="4" placeholder="例如: example.com, another-site.com"></textarea>
+
+    <button type="submit">保存设置</button>
+</form>
+
+<script src="popup.js"></script>
+</body>
+</html>
