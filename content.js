@@ -6,27 +6,52 @@ chrome.storage.sync.get(['apiUrl', 'websites'], function (data) {
     const currentDomain = window.location.hostname;
     const isSupportedSite = websites.some(site => currentDomain.includes(site));
 
-    if (isSupportedSite && window.location.href.includes('torrents.php')) {
-        processPage(apiUrl);
-    }
-
-    if (isSupportedSite && window.location.href.includes('details.php')) {
-        processDetail(apiUrl);
+    if (isSupportedSite) {
+        if (window.location.href.includes('torrents.php')) {
+            processPage(apiUrl, 'NexusPHP');
+        } else if (window.location.href.includes('forumdisplay.php')) {
+            processPage(apiUrl, 'Discuz');
+        } else if (window.location.href.includes('details.php')) {
+            processDetail(apiUrl, 'NexusPHP');
+        } else if (window.location.href.includes('viewthread.php')) {
+            processDetail(apiUrl, 'Discuz');
+        }
     }
 });
 
+function getSelectors(siteType) {
+    if (siteType === 'NexusPHP') {
+        return {
+            table: 'table.torrents',
+            rows: 'table.torrents > tbody > tr',
+            detailLink: 'a[href*="details.php?id="]',
+            statusHeader: 'td.status',
+            statusCell: 'td.status > a',
+        }
+    } else if (siteType === 'Discuz') {
+        return {
+            table: 'table.datatable',
+            rows: 'table.datatable > tbody',
+            detailLink: 'a[href*="viewthread.php?tid="]',
+            statusHeader: 'td.status',
+            statusCell: 'td.status > a',
+        }
+    }
+}
+
 
 // 在 torrents 页面（种子列表页）处理
-function processPage(apiUrl) {
-    // 获取表格的行，包括表头和所有数据行
-    const table = document.querySelector('table.torrents');
-    const rows = table.querySelectorAll('table.torrents > tbody > tr');
-
+function processPage(apiUrl, siteType) {
+    const selectors = getSelectors(siteType);
+    const table = document.querySelector(selectors.table);
+    const rows = table.querySelectorAll(selectors.rows);
+    const firstRow = siteType === 'NexusPHP' ? rows[0] : table.querySelector('thead > tr');
     const uniqueIds = Array.from(rows).map(row => {
-        const detailLink = row.querySelector('a[href*="details.php?id="]');
+        const detailLink = row.querySelector(selectors.detailLink);
         if (detailLink) {
-            const torrentId = new URL(detailLink.href).searchParams.get('id');
-            return getUniqueId(torrentId)
+            const searchParams = new URL(detailLink.href).searchParams;
+            const id = searchParams.get('id') || searchParams.get('tid');
+            return getUniqueId(id)
         } else {
             return null;
         }
@@ -35,20 +60,24 @@ function processPage(apiUrl) {
     fetchStatusList(apiUrl, uniqueIds)
         .then(data => {
             // 处理表头
-            const firstRow = rows[0];
             const statusHeader = document.createElement('td');
             statusHeader.className = 'colhead';
             statusHeader.textContent = '状态';
             firstRow.insertBefore(statusHeader, firstRow.firstChild);  // 在第一列插入状态列
             rows.forEach(row => {
-                const detailLink = row.querySelector('a[href*="details.php?id="]');
+                const detailLink = row.querySelector(selectors.detailLink);
                 if (detailLink) {
-                    const torrentId = new URL(detailLink.href).searchParams.get('id');
-                    const uniqueId = getUniqueId(torrentId);
+                    if (siteType === 'Discuz') {
+                        row = row.querySelector('tr');
+                    }
+                    const searchParams = new URL(detailLink.href).searchParams;
+                    const id = searchParams.get('id') || searchParams.get('tid');
+                    const uniqueId = getUniqueId(id);
                     const status = data[uniqueId];
                     const statusCell = row.insertCell(0);  // 在第一列插入新的单元格
                     statusCell.textContent = status || 'none';  // 显示状态
                     statusCell.style.color = 'white';
+                    statusCell.style.textAlign = 'center';
                     // 根据状态设置不同的颜色
                     if (status === 'like') {
                         statusCell.style.backgroundColor = 'green';
@@ -70,8 +99,8 @@ function processPage(apiUrl) {
 // 处理详情页面（详情页的按钮）
 function processDetail(apiUrl) {
     const h1Element = document.querySelector('h1');
-    const torrentId = getTorrentId();
-    const uniqueId = getUniqueId(torrentId);
+    const id = getId();
+    const uniqueId = getUniqueId(id);
 
     if (h1Element && uniqueId) {
         const newLabel = document.createElement('div');
@@ -175,9 +204,9 @@ function getDomain() {
 }
 
 // 获取当前页面中的 torrent id（通常位于 URL 中，例如 details.php?id=1234）
-function getTorrentId() {
+function getId() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('id');
+    return urlParams.get('id') || urlParams.get('tid');
 }
 
 // 获取带有域名的唯一ID
