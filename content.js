@@ -102,6 +102,11 @@ function processDetail(apiUrl) {
     const id = getId();
     const uniqueId = getUniqueId(id);
 
+    const data = {
+        id: uniqueId, title: h1Element.textContent, url: window.location.href, ...extractIds()
+    };
+
+
     if (h1Element && uniqueId) {
         const newLabel = document.createElement('div');
         newLabel.id = 'thread-status';
@@ -118,10 +123,11 @@ function processDetail(apiUrl) {
         customContainer.style.marginTop = '10px';
         customContainer.style.marginBottom = '10px';
 
+
         // 创建三个按钮
-        const likeButton = createButton('Like', 'green', () => updateStatus(apiUrl, uniqueId, 'like'));
-        const unlikeButton = createButton('Unlike', 'red', () => updateStatus(apiUrl, uniqueId, 'unlike'));
-        const achieveButton = createButton('Achieve', 'blue', () => updateStatus(apiUrl, uniqueId, 'achieve'));
+        const likeButton = createButton('Like', 'green', () => updateStatus(apiUrl, data, 'like'));
+        const unlikeButton = createButton('Unlike', 'red', () => updateStatus(apiUrl, data, 'unlike'));
+        const achieveButton = createButton('Achieve', 'blue', () => updateStatus(apiUrl, data, 'achieve'));
 
         // 将按钮添加到页面
         customContainer.appendChild(newLabel);
@@ -130,6 +136,36 @@ function processDetail(apiUrl) {
         customContainer.appendChild(achieveButton);
         h1Element.insertAdjacentElement('afterend', customContainer);
     }
+}
+
+function extractIds() {
+    const data = {
+        doubanId: null, imdbId: null, bgmId: null
+    };
+
+    // 查找豆瓣链接
+    const doubanMatch = document.body.innerHTML.match(/https:\/\/movie\.douban\.com\/subject\/(\d{5,})/);
+    if (doubanMatch) {
+        data.doubanId = doubanMatch[1];
+    }
+
+    // 查找IMDB链接
+    const imdbMatch = document.body.innerHTML.match(/http:\/\/www\.imdb\.com\/title\/(tt\d{7,8})/);
+    if (imdbMatch) {
+        data.imdbId = imdbMatch[1];
+    }
+
+    // 查找bgm链接
+    let bgmMatch = document.body.innerHTML.match(/https:\/\/bgm\.tv\/subject\/(\d{3,})/);
+    if (bgmMatch) {
+        data.bgmId = bgmMatch[1];
+    } else {
+        bgmMatch = document.body.innerHTML.match(/https:\/\/bangumi\.tv\/subject\/(\d{3,})/);
+        if (bgmMatch) {
+            data.bgmId = bgmMatch[1];
+        }
+    }
+    return data;
 }
 
 // 创建按钮的辅助函数
@@ -171,11 +207,11 @@ function fetchStatus(apiUrl, uniqueId) {
 }
 
 // 调用 API 更新状态
-function updateStatus(apiUrl, uniqueId, status) {
+function updateStatus(apiUrl, data, status) {
     fetch(`${apiUrl}/api/thread/update`, {
         method: 'POST', headers: {
             'Content-Type': 'application/json'
-        }, body: JSON.stringify({id: uniqueId, status})
+        }, body: JSON.stringify({status, ...data})
     })
         .then(response => response.json())
         .then(data => {
