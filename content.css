@@ -1,0 +1,65 @@
+.kaleido-status-btn {
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    color: white;
+    border: none;
+    padding: 10px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.kaleido-status-btn:hover {
+    box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.kaleido-status-btn:active {
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(1px); /* 点击时的按压效果 */
+}
+
+.kaleido-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.kaleido-table th, .kaleido-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.kaleido-table th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+.kaleido-table a {
+    color: blue;
+    text-decoration: none;
+}
+
+.kaleido-table a:hover {
+    text-decoration: underline;
+}
+
+/* 标签样式 */
+.kaleido-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+}
+
+/* 不同状态的颜色样式 */
+.kaleido-like {
+    background-color: #28a745; /* 绿色 */
+}
+
+.kaleido-unlike {
+    background-color: #dc3545; /* 红色 */
+}
+
+.kaleido-achieve {
+    background-color: #007bff; /* 黄色 */
+}

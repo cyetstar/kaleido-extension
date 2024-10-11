@@ -101,41 +101,62 @@ function processDetail(apiUrl) {
     const h1Element = document.querySelector('h1');
     const id = getId();
     const uniqueId = getUniqueId(id);
-
-    const data = {
-        id: uniqueId, title: h1Element.textContent, url: window.location.href, ...extractIds()
-    };
+    const ids = extractIds();
 
 
     if (h1Element && uniqueId) {
-        const newLabel = document.createElement('div');
-        newLabel.id = 'thread-status';
-        newLabel.style.marginBottom = '10px';
-        newLabel.style.fontSize = '16px';
-        fetchStatus(apiUrl, uniqueId).then(data => {
-            if (data.status) {
-                setLabelContent(newLabel, data.status);
-            }
-        });
-
         // 创建按钮容器
         const customContainer = document.createElement('div');
         customContainer.style.marginTop = '10px';
         customContainer.style.marginBottom = '10px';
 
 
-        // 创建三个按钮
-        const likeButton = createButton('Like', 'green', () => updateStatus(apiUrl, data, 'like'));
-        const unlikeButton = createButton('Unlike', 'red', () => updateStatus(apiUrl, data, 'unlike'));
-        const achieveButton = createButton('Achieve', 'blue', () => updateStatus(apiUrl, data, 'achieve'));
+        fetchStatus(apiUrl, {id: uniqueId, ...ids}).then(res => {
+            const newLabel = document.createElement('div');
+            newLabel.id = 'thread-status';
+            newLabel.style.marginBottom = '10px';
+            newLabel.style.fontSize = '16px';
+            customContainer.appendChild(newLabel);
+            setLabelContent(newLabel, res.status);
 
-        // 将按钮添加到页面
-        customContainer.appendChild(newLabel);
-        customContainer.appendChild(likeButton);
-        customContainer.appendChild(unlikeButton);
-        customContainer.appendChild(achieveButton);
+            createDataTable(customContainer, res)
+
+            const data = {
+                id: uniqueId, title: h1Element.textContent, url: window.location.href, ...ids
+            };
+            const likeButton = createButton('Like', () => updateStatus(apiUrl, data, 'like'));
+            const unlikeButton = createButton('Unlike', () => updateStatus(apiUrl, data, 'unlike'));
+            const achieveButton = createButton('Achieve', () => updateStatus(apiUrl, data, 'achieve'));
+
+            customContainer.appendChild(likeButton);
+            customContainer.appendChild(unlikeButton);
+            customContainer.appendChild(achieveButton);
+        });
+
         h1Element.insertAdjacentElement('afterend', customContainer);
     }
+}
+
+function createDataTable(container, data) {
+    if ((data.filenameList != null && data.filenameList.length > 0) ||
+        (data.threadList != null && data.threadList.length > 0)) {
+        const table = document.createElement('table');
+        table.classList.add('kaleido-table');
+        table.style.marginBottom = '20px';
+        data.filenameList.forEach(filename => {
+            table.innerHTML += `<tr><td>${filename}</td></tr>`;
+        });
+        data.threadList.forEach(thread => {
+            const threadRow = `
+      <tr>
+        <td><span class="kaleido-tag kaleido-${thread.status}">${thread.status}</span> <a href="${thread.url}" target="_blank">${thread.title}</a></td>
+      </tr>
+    `;
+            table.innerHTML += threadRow;
+        });
+        container.appendChild(table);
+    }
+
 }
 
 function extractIds() {
@@ -150,7 +171,7 @@ function extractIds() {
     }
 
     // 查找IMDB链接
-    const imdbMatch = document.body.innerHTML.match(/http:\/\/www\.imdb\.com\/title\/(tt\d{7,8})/);
+    const imdbMatch = document.body.innerHTML.match(/https:\/\/www\.imdb\.com\/title\/(tt\d{5,10})/);
     if (imdbMatch) {
         data.imdbId = imdbMatch[1];
     }
@@ -169,18 +190,17 @@ function extractIds() {
 }
 
 // 创建按钮的辅助函数
-function createButton(text, backgroundColor, onClick) {
+function createButton(text, onClick) {
     const button = document.createElement('button');
     button.textContent = text;
     button.classList.add('kaleido-status-btn'); // 加入样式类
-    button.style.backgroundColor = backgroundColor;
-    button.style.color = 'white';
-    button.style.border = 'none';
-    button.style.padding = '10px';
-    button.style.marginRight = '5px';
-    button.style.cursor = 'pointer';
+    button.classList.add('kaleido-' + text.toLowerCase()); // 加入样式类
     button.addEventListener('click', onClick);
     return button;
+}
+
+function createTag(text, backgroundColor) {
+
 }
 
 function fetchStatusList(apiUrl, uniqueIds) {
@@ -196,11 +216,11 @@ function fetchStatusList(apiUrl, uniqueIds) {
 }
 
 // 调用 API 获取种子的状态
-function fetchStatus(apiUrl, uniqueId) {
+function fetchStatus(apiUrl, data) {
     return fetch(`${apiUrl}/api/thread/view`, {
         method: 'POST', headers: {
             'Content-Type': 'application/json'
-        }, body: JSON.stringify({id: uniqueId})
+        }, body: JSON.stringify(data)
     })
         .then(response => response.json())
         .catch(err => console.error("Error fetching status:", err));
@@ -251,24 +271,4 @@ function getUniqueId(torrentId) {
     return `${domain}-${torrentId}`;
 }
 
-// 在页面上添加样式
-const style = document.createElement('style');
-style.textContent = `
-  .kaleido-status-btn {
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    border-radius: 5px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  }
 
-  .kaleido-status-btn:hover {
-    background-color: #218838; /* 悬停时的颜色 */
-    box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .kaleido-status-btn:active {
-    background-color: #1e7e34; /* 点击时的颜色 */
-    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
-    transform: translateY(1px); /* 点击时的按压效果 */
-  }
-`;
-document.head.appendChild(style);
